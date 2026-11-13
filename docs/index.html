@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123c35">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://benjamin-lam.de http://localhost:8001; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'self'">
+  <title>Bingo – gemeinsam spielen</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="./" aria-label="Bingo Startseite"><span aria-hidden="true">●</span> Bingo</a>
+    <p>Gemeinsam spielen. Zahl für Zahl.</p>
+  </header>
+  <main>
+    <section id="home" class="panel home-panel">
+      <p class="eyebrow">Das Online-Bingospiel</p>
+      <h1>Bereit für eine Runde?</h1>
+      <p class="intro">Erstelle ein Spiel und lade andere mit deiner Spiel-ID ein – oder tritt einer bestehenden Runde bei.</p>
+      <button id="create-game" class="button button-primary" type="button">Neues Spiel erstellen</button>
+      <div class="divider"><span>oder mitspielen</span></div>
+      <form id="join-form" class="join-form">
+        <label for="game-id-input">Spiel-ID</label>
+        <input id="game-id-input" name="game_id" autocomplete="off" maxlength="6" pattern="[A-HJ-NP-Z2-9a-hj-np-z]{6}" placeholder="z. B. B7K4MT" required>
+        <label for="player-name">Dein Anzeigename <span>(optional)</span></label>
+        <input id="player-name" name="name" autocomplete="nickname" maxlength="80" placeholder="Spieler">
+        <button class="button button-secondary" type="submit">Spiel beitreten</button>
+      </form>
+    </section>
+
+    <section id="game-view" class="game-view" hidden>
+      <div class="game-top panel">
+        <div>
+          <p class="eyebrow">Spiel-ID</p>
+          <h1 id="game-id"></h1>
+        </div>
+        <button id="copy-id" class="button button-light" type="button">ID kopieren</button>
+      </div>
+      <p id="connection-status" class="connection" role="status">Verbinde …</p>
+      <div class="game-layout">
+        <section class="panel game-board" aria-labelledby="round-heading">
+          <div class="round-heading">
+            <div>
+              <p id="round-label" class="eyebrow">Lobby</p>
+              <h2 id="round-heading">Wartet auf den Start</h2>
+            </div>
+            <span id="round-number" class="round-number"></span>
+          </div>
+          <div id="number-display" class="number-display" aria-live="polite" aria-atomic="true">–</div>
+          <div id="actions" class="actions"></div>
+          <h3>Gezogene Zahlen <span id="drawn-count"></span></h3>
+          <ol id="drawn-numbers" class="drawn-numbers" aria-label="Bereits gezogene Zahlen"></ol>
+          <section id="card-section" class="card-section" hidden>
+            <h3>Deine Bingokarte</h3>
+            <p class="help-text">Tippe auf eine gezogene Zahl, um sie zu markieren.</p>
+            <div id="bingo-card" class="bingo-card" role="group" aria-label="Deine Bingokarte"></div>
+          </section>
+          <p id="game-message" class="message" role="status" aria-live="polite"></p>
+        </section>
+        <aside class="panel players-panel">
+          <h2>Mitspielende <span id="player-count" class="count"></span></h2>
+          <ul id="players-list" class="players-list"></ul>
+        </aside>
+      </div>
+      <button id="leave-game" class="button button-light leave-button" type="button">Zur Startseite</button>
+    </section>
+    <div id="notice" class="notice" role="status" aria-live="polite"></div>
+  </main>
+  <footer>
+    <p>Viel Glück und gute Unterhaltung!</p>
+  </footer>
+</body>
+</html>

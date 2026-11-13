@@ -1,0 +1,3 @@
+BINGO_APP_PATH=/home/benutzer/bingo-private
+BINGO_DB_PATH=/home/benutzer/bingo-private/data/bingo.sqlite
+BINGO_CORS_ORIGINS=https://benjamin-lam.github.io
