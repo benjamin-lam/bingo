@@ -1,0 +1,5 @@
+/backend/data/
+*.sqlite
+*.sqlite-*
+.env
+.DS_Store
