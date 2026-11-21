@@ -278,6 +278,11 @@ try {
         $rateGame->rateLimit('203.0.113.20', 'join', $rateCreated['game_id'], null, time());
         $ratePlayers[] = $rateGame->join($rateCreated['game_id'], 'Rate-Spieler ' . $index)['token'];
     }
+    $parallelPollCreated = $rateGame->create();
+    $parallelPollTokens = [$parallelPollCreated['token']];
+    for ($index = 0; $index < 30; $index++) {
+        $parallelPollTokens[] = $rateGame->join($parallelPollCreated['game_id'], 'Parallel-Poller ' . $index)['token'];
+    }
     $rateObserver = new PDO('sqlite:' . $directory . '/rate.sqlite');
     $databaseVersionBeforePolling = (int) $rateObserver->query('PRAGMA data_version')->fetchColumn();
     $firstPoll = time();
@@ -292,14 +297,14 @@ try {
     check((int) $rateObserver->query('PRAGMA data_version')->fetchColumn() === $databaseVersionBeforePolling, 'Status-Polling verursacht keine SQLite-Schreibtransaktionen');
     $parallelPollWorkers = [[
         'database' => $directory . '/rate.sqlite',
-        'game_id' => $rateCreated['game_id'],
-        'token' => $rateCreated['token'],
+        'game_id' => $parallelPollCreated['game_id'],
+        'token' => $parallelPollCreated['token'],
         'action' => 'poll',
     ]];
-    foreach ($ratePlayers as $token) {
+    foreach (array_slice($parallelPollTokens, 1) as $token) {
         $parallelPollWorkers[] = [
             'database' => $directory . '/rate.sqlite',
-            'game_id' => $rateCreated['game_id'],
+            'game_id' => $parallelPollCreated['game_id'],
             'token' => $token,
             'action' => 'poll',
         ];
@@ -311,7 +316,7 @@ try {
     check(is_array($rateLimitState) && is_file($directory . '/.bingo-rate-limits.lock'), 'Parallele Rate-Limit-Updates hinterlassen gültiges JSON und verwenden eine stabile Sperrdatei');
     $parallelAddressHash = hash('sha256', '203.0.113.21');
     check(($rateLimitState['ip:' . $parallelAddressHash . ':all']['count'] ?? 0) === 31, 'Alle gleichzeitigen Polls werden im gemeinsamen IP-Zähler atomar erfasst');
-    foreach ([$rateCreated['token'], ...$ratePlayers] as $parallelToken) {
+    foreach ($parallelPollTokens as $parallelToken) {
         $parallelTokenHash = hash('sha256', $parallelToken);
         check(($rateLimitState['token:' . $parallelTokenHash . ':state']['count'] ?? 0) === 1, 'Jeder parallele Poll bleibt im individuellen Tokenzähler erhalten');
     }

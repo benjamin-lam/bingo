@@ -9,9 +9,9 @@
 
 ## Ergebnis in Kürze
 
-Alle sieben Review-Befunde wurden im Code bearbeitet und neue Regressionstests, Integrations- und Konkurrenztest-Harnesses sowie eine GitHub-Actions-Pipeline ergänzt. **Keiner der Befunde erhält derzeit den Status `fixed_verified`:** PHP ist in der lokalen Windows-Umgebung nicht installiert und WSL fehlt. Daher konnten weder PHP-Syntax, PHP-/SQLite-Tests, HTTP-/CORS-Integration noch parallele PHP-Prozesse tatsächlich ausgeführt werden. Der neue CI-Lauf ist noch nicht beobachtet. Ein lokaler JavaScript-DOM-Test der Bingokarte bestand.
+Alle sieben Review-Befunde wurden im Code bearbeitet und neue Regressionstests, Integrations- und Konkurrenztest-Harnesses sowie eine GitHub-Actions-Pipeline ergänzt. **Keiner der Befunde erhält derzeit den Status `fixed_verified`:** PHP ist in der lokalen Windows-Umgebung nicht installiert und WSL fehlt. Im ersten Actions-Lauf bestanden die PHP-Syntaxprüfungen, die PHP-Suite stoppte jedoch an einer fehlerhaften Erwartung im neuen Rate-Limit-Konkurrenztest. Der Test wurde auf frische Tokens isoliert; der erneute CI-Lauf steht noch aus. Ein lokaler JavaScript-DOM- und Dokumentationstest bestand.
 
-**Produktivfreigabe für 30 gleichzeitige Mitspielende: Nein, noch nicht nachgewiesen.** Blocker sind der nicht ausgeführte PHP-/CI-Lauf, ein produktionsnaher 30-Client-Test auf dem vorgesehenen Hosting sowie eine echte Browser-/Tastatur-/Screenreader-Prüfung. Das Hosting und seine PHP-, SQLite-, Verzeichnis- und Proxy-Konfiguration wurden nicht geprüft.
+**Produktivfreigabe für 30 gleichzeitige Mitspielende: Nein, noch nicht nachgewiesen.** Blocker sind der noch nicht erfolgreich abgeschlossene PHP-/CI-Lauf, ein produktionsnaher 30-Client-Test auf dem vorgesehenen Hosting sowie eine echte Browser-/Tastatur-/Screenreader-Prüfung. Das Hosting und seine PHP-, SQLite-, Verzeichnis- und Proxy-Konfiguration wurden nicht geprüft.
 
 ## Statuswerte
 
@@ -32,8 +32,8 @@ Alle sieben Review-Befunde wurden im Code bearbeitet und neue Regressionstests, 
 | `node tests/frontend-test.mjs` | Bestanden | `OK: Frontend DOM-/A11y-Prüfungen`; synthetischer DOM-Harness, kein echter Browser oder Screenreader. |
 | `node tests/docs-test.mjs` | Bestanden | `OK: Berichts-, TODO- und Spezifikationskonsistenz`; Findings, Statuswerte und offene/erledigte TODO-IDs stimmen zwischen JSON und Markdown überein. |
 | Statische Homepage im integrierten Browser geöffnet | Teilweise manuell geprüft | Titel, Startseite, Beschriftungen und sichtbares Layout wurden geladen. Die Spielansicht blieb verborgen; kein API-Spielablauf, keine echte Bingokarte und kein Screenreader wurden geprüft. |
-| PHP-Suite, Lint, SQLite, HTTP, Konkurrenztests | Blockiert | Benötigen PHP 8.2+, `pdo_sqlite`, `json`, `flock`, `proc_open` und den lokalen PHP-Webserver; PHP fehlt lokal. |
-| GitHub Actions | Noch nicht ausgeführt | Pipeline ist ergänzt, Remote-Lauf erst nach Push verfügbar. |
+| PHP-Suite, Lint, SQLite, HTTP, Konkurrenztests lokal | Blockiert | Benötigen PHP 8.2+, `pdo_sqlite`, `json`, `flock`, `proc_open` und den lokalen PHP-Webserver; PHP fehlt lokal. Der erste CI-Lauf bestand Lint, stoppte aber an einer Testannahme; Korrektur-Rerun ausstehend. |
+| GitHub Actions, Lauf #1 | Fehlgeschlagen; Korrektur ausstehend | PHP-Syntaxschritte bestanden. Die Suite stoppte an einer falschen Erwartung des individuellen Tokenzählers, weil der Test dieselben Tokens zuvor in der synthetischen Pollsequenz verwendet hatte. Die Parallelprüfung nutzt nun frische Tokens; Ergebnis nach Folge-Push ausstehend. |
 | Produktivhosting, realer 30-Client-Test, WCAG manuell | Nicht geprüft | Kein Hosting-Zugang, realer Browser-/Screenreaderlauf oder produktionsnaher Client-Test in dieser Arbeitsumgebung. |
 
 ## Befunde
@@ -45,7 +45,7 @@ Alle sieben Review-Befunde wurden im Code bearbeitet und neue Regressionstests, 
 - **Änderung:** Statusabfragen, Schreibaktionen, öffentliche Spiel-/Beitrittsaktionen und ungültige Requests verwenden getrennte Rate-Limits. Statusgrenzen: 1.800/min/IP und 45/min/Token; Schreibaktionen: 1.200/min/IP und 120/min/Token; Erstellung: 5/min/IP; Beitritt: 60/min/IP; IP-Gesamtlimit: 3.600/min. Eine separate stabile `flock`-Sperrdatei im privaten Datenverzeichnis serialisiert Änderungen; die JSON-Zählerdatei wird über eine temporäre Datei atomar ersetzt. Polling verursacht keine SQLite-Schreibtransaktion. Bodies sind auf 4 KiB begrenzt; globale und aktionsspezifische Zähler werden gemeinsam aktualisiert, fehlerhafte Bodies zählen ebenfalls zum IP- und Invalid-Request-Limit. Es werden keine nicht explizit konfigurierten Proxy-Header vertraut.
 - **Dateien:** `.gitignore`, `backend/src/Game.php`, `backend/public/index.php`, `SPEC.md`, `backend/README.md`, `tests/run.php`, `tests/http.php`, `tests/concurrency-worker.php`.
 - **Tests:** synthetische 31-Client-Pollsequenz über 62 Sekunden; 31 parallele Statusabfragen aus einer IP und anschließende JSON-Konsistenzprüfung; eigene Limits für Status, Schreiben und öffentliche Erstellung; HTTP-Limit für ungültige Bodies.
-- **Testergebnis:** Nicht ausgeführt; PHP fehlt lokal. CI-Ergebnis steht aus.
+- **Testergebnis:** Der erste CI-Lauf scheiterte an einer Testannahme: Die synthetische Pollsequenz hatte dieselben Tokens bereits verwendet. Die Parallelprüfung nutzt nun eine frische Spiel-/Tokenmenge; erneuter CI-Lauf steht aus. PHP fehlt lokal.
 - **Verbleibende Risiken:** Dateisperren und Durchsatz müssen auf dem konkreten Shared Hosting gemessen werden. Ein Proxy muss `REMOTE_ADDR` sicher setzen.
 
 ### BINGO-REV-002 — Spiel-ID wird nicht konsistent normalisiert
@@ -55,7 +55,7 @@ Alle sieben Review-Befunde wurden im Code bearbeitet und neue Regressionstests, 
 - **Änderung:** Spiel-IDs werden am API-Eingang normalisiert; die Spielmethoden normalisieren ebenfalls vor nachfolgenden Abfragen und Änderungen.
 - **Dateien:** `backend/public/index.php`, `backend/src/Game.php`, `tests/run.php`, `tests/http.php`.
 - **Tests:** gemischte Kleinschreibung für `state`, `join`, `start`, `draw`, `mark`, `bingo`, `endRound`, `newRound`; HTTP-Regression für `join` und `state`.
-- **Testergebnis:** Nicht ausgeführt; PHP fehlt lokal. CI-Ergebnis steht aus.
+- **Testergebnis:** Frühe ID-Normalisierungstests liefen im ersten CI-Lauf vor dem späteren Rate-Limit-Assertionfehler; die vollständige Suite wurde nicht erfolgreich abgeschlossen. Folge-Lauf steht aus.
 - **Verbleibende Risiken:** Keine zusätzlichen Code-Risiken identifiziert; Laufzeitverifikation offen.
 
 ### BINGO-REV-003 — Symlink kann SQLite-Webroot-Prüfung umgehen
@@ -104,7 +104,7 @@ Alle sieben Review-Befunde wurden im Code bearbeitet und neue Regressionstests, 
 - **Status:** `implemented_unverified`
 - **Änderung:** Der optionale `pcntl`-Test wurde durch verpflichtende `proc_open`-Worker mit gemeinsamer Startbarriere ersetzt; fehlendes `proc_open` führt zum Testfehler statt zum stillen Überspringen. Ergänzt sind parallele Ziehungen, parallele gültige Bingo-Rufe und Einzelgewinner, 30 Mitspielende, 100 Spiele, 31 direkte Poller, 31 barrier-synchronisierte HTTP-Statusabfragen über mehrere PHP-CLI-Server-Worker, Polling über 62 simulierte Sekunden, HTTP-/CORS-/Fehler-/Berechtigungstests, Reconnect/Rundenwechsel und GitHub Actions.
 - **Dateien:** `tests/run.php`, `tests/http.php`, `tests/concurrency-worker.php`, `tests/frontend-test.mjs`, `tests/docs-test.mjs`, `.github/workflows/tests.yml`.
-- **Tests:** Frontend-DOM-Test bestanden; PHP-, HTTP- und Konkurrenztests nicht ausgeführt. GitHub Actions noch nicht beobachtet.
+- **Tests:** Frontend-DOM- und Dokumentationstests lokal bestanden. Der erste Actions-Lauf bestand PHP-Lint, stoppte aber an einer falschen Erwartung im Parallelzähler-Test; Test auf frische Tokens isoliert, Folge-CI ausstehend.
 - **Verbleibende Risiken:** Ein echter Hostinglasttest und parallele Requests im konkreten Hosting bleiben erforderlich; der lokale HTTP-Test nutzt den PHP-CLI-Server. `proc_open` muss im CI verfügbar bleiben.
 
 ## Offene Aufgaben

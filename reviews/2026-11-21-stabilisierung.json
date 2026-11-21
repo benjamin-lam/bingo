@@ -8,7 +8,7 @@
     "base_commit": "6782da90ef153ca101485b0487b0be607f1834eb",
     "application_commit": "90f4c73669a3ff0bdc5dd30a347937102611e4b0",
     "production_ready_for_30_players": false,
-    "production_readiness_reason": "Die Änderungen und Testfälle sind implementiert, aber die PHP-Suite, HTTP-Integration und Prozess-Konkurrenztests konnten in der lokalen Windows-Umgebung mangels PHP nicht ausgeführt werden. Ein erfolgreicher CI-Lauf, ein produktionsnaher 30-Client-Test auf dem tatsächlichen Shared Hosting sowie manuelle Browser-/Screenreader-Prüfungen stehen noch aus.",
+    "production_readiness_reason": "Die PHP-Syntaxprüfungen liefen im ersten CI-Lauf erfolgreich; die Suite stoppte jedoch an einer fehlerhaften Erwartung im neuen Rate-Limit-Konkurrenztest. Der Test verwendet nun frische Token für die parallele Zählerprüfung; der erneute CI-Lauf steht noch aus. Ein produktionsnaher 30-Client-Test auf dem tatsächlichen Shared Hosting sowie manuelle Browser-/Screenreader-Prüfungen stehen ebenfalls aus.",
     "status_definitions": {
       "fixed_verified": "Änderung ist implementiert und durch passende automatisierte oder nachvollziehbar dokumentierte manuelle Prüfungen erfolgreich verifiziert.",
       "implemented_unverified": "Änderung und vorgesehene Tests sind versioniert, aber mindestens eine notwendige Verifikation wurde noch nicht erfolgreich ausgeführt.",
@@ -73,8 +73,8 @@
       },
       {
         "check": "GitHub Actions",
-        "status": "not_run",
-        "evidence": "Workflow hinzugefügt; ein Remote-Lauf kann erst nach Push beobachtet werden."
+        "status": "failed_then_fix_pushed_pending_rerun",
+        "evidence": "Lauf #1 (Commit 711d18a) bestand alle PHP-Syntaxprüfungen, stoppte aber an der Erwartung eines frischen Tokenzählers, nachdem dieselben Tokens in der vorherigen synthetischen Pollsequenz verwendet wurden. Die Parallelprüfung nutzt jetzt eine eigene frische Spiel-/Tokenmenge; Ergebnis des erneuten Laufs steht aus."
       },
       {
         "check": "Echter Browser, Screenreader, Shared-Hosting-Lasttest",
@@ -157,7 +157,7 @@
         "change": "Ersetzt das pcntl-bedingte Überspringen durch obligatorische proc_open-Worker mit Startbarriere. Fügt Konkurrenztests für Ziehen, gültige Bingo-Rufe/Einzelgewinner, 30 Teilnehmende, 100 Spiele, direkte Poller und 31 barrier-synchronisierte HTTP-Statusabfragen über mehrere PHP-CLI-Server-Worker hinzu; außerdem HTTP/CORS-, Berechtigungs-, Fehler-, Reconnect- und Rundentests sowie eine GitHub-Actions-Pipeline ohne bezahlte Dienste.",
         "changed_files": ["tests/run.php", "tests/http.php", "tests/concurrency-worker.php", "tests/frontend-test.mjs", "tests/docs-test.mjs", ".github/workflows/tests.yml"],
         "tests": ["tests/run.php", "tests/http.php: 31 barrier-synchronisierte HTTP-Statusabfragen über mehrere PHP-CLI-Server-Worker", "tests/concurrency-worker.php", "tests/frontend-test.mjs", "tests/docs-test.mjs", ".github/workflows/tests.yml"],
-        "test_results": "node tests/frontend-test.mjs und node tests/docs-test.mjs wurden lokal ausgeführt und bestanden. PHP-, SQLite-, HTTP- und Prozess-Konkurrenztests konnten wegen fehlendem PHP nicht ausgeführt werden; CI wurde hinzugefügt, Ergebnis steht aus.",
+        "test_results": "node tests/frontend-test.mjs und node tests/docs-test.mjs wurden lokal ausgeführt und bestanden. Der erste CI-Lauf bestand die PHP-Syntaxprüfungen, stoppte in der PHP-Suite an der korrigierten Rate-Limit-Testannahme; der vollständige erneute Lauf steht aus.",
         "remaining_risks": ["Die CI darf proc_open nicht deaktivieren; der Test bricht ausdrücklich ab, statt Konkurrenztests zu überspringen.", "Das produktive 30-Client-Verhalten ist ohne echten Hosting-Lasttest nicht belegt."]
       }
     ],
