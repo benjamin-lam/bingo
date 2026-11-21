@@ -120,6 +120,24 @@ Die IDs und Statuswerte sind in [TODO.md](../TODO.md) und [TODO.json](../TODO.js
 
 Abgeschlossen sind `STAB-TODO-003` (PHP-Suite/Syntaxprüfungen in CI bestanden) und `STAB-TODO-007` (Branch gepusht; PR [#3](https://github.com/benjamin-lam/bingo/pull/3) gegen `copilot/develop-bingo-game` offen). Es wurde weder gemergt noch deployed.
 
+## Serverinstallationsanleitung und ZIP
+
+Für die manuelle Bereitstellung wurden [SERVER-INSTALLATION.md](../SERVER-INSTALLATION.md)
+und [dist/bingo-server-installation.zip](../dist/bingo-server-installation.zip)
+erstellt. Das Archiv enthält ausschließlich die Anleitung, `Game.php`, den
+öffentlichen `index.php`-Endpunkt und einen leeren privaten Datenordner. Die
+beiden PHP-Dateien sowie die im ZIP enthaltene README wurden byteweise mit den
+Repository-Quellen verglichen. Datenbank, Tokens, `.env` und sonstige Geheimnisse
+sind nicht enthalten.
+
+- **SHA-256:** `47681681547FFAFABB97D1BAC7B91EB8AEBCF32D59267904C4D389CF6931E8BE`
+- **Bereitstellung:** Die Anleitung erklärt getrennte private/Webroot-Pfade,
+	PHP-Umgebungsvariablen, HTTPS, CORS/CSP, GitHub-Pages-Branch und `/docs` sowie
+	erste Verbindungstests. GitHub Pages führt das PHP-Backend nicht aus.
+- **Status:** Paket validiert und versioniert; noch kein Server-Upload und kein
+	Pages-Deploy. Der PR [#3](https://github.com/benjamin-lam/bingo/pull/3) ist
+	weiterhin offen und wird nicht automatisch gemergt.
+
 ## Gesamturteil
 
 **Nicht freigegeben für produktiven Betrieb mit 30 gleichzeitigen Mitspielenden.** Die vorgesehene Begrenzung lässt 30 Spielende plus Spielleitung hinter einer gemeinsamen IP regulär pollen; PHP-/HTTP-/SQLite-Konkurrenztests bestanden in CI. Der echte Hostingbetrieb, die konkrete Proxy-/CORS-Konfiguration und manuelle Barrierefreiheit sind jedoch noch nicht nachgewiesen. Nach repräsentativem Hosting-Lasttest und Browser-/Screenreaderprüfung kann die Produktivfreigabe neu bewertet werden.

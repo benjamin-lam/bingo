@@ -162,6 +162,18 @@
       }
     ],
     "open_tasks": ["STAB-TODO-004", "STAB-TODO-005", "STAB-TODO-006"],
+    "server_installation_package": {
+      "guide": "SERVER-INSTALLATION.md",
+      "zip": "dist/bingo-server-installation.zip",
+      "sha256": "47681681547FFAFABB97D1BAC7B91EB8AEBCF32D59267904C4D389CF6931E8BE",
+      "entries": [
+        "bingo-server-installation/README.md",
+        "bingo-server-installation/private/src/Game.php",
+        "bingo-server-installation/private/data/",
+        "bingo-server-installation/public/bingo/api/index.php"
+      ],
+      "validation": "ZIP-Einträge stimmen exakt mit dem erwarteten Serverpaket überein; eingebettete README und beide Backend-Dateien sind bytegleich mit den Quellen. Keine SQLite-Datenbank, Tokens, Umgebungsdatei oder Geheimnisse enthalten."
+    },
     "git": {
       "working_branch": "codex/stabilisierung-bingo",
       "commit": "86fb68ad7db5d2dd47c8c42d29f17e8a63b38bed",

@@ -42,6 +42,12 @@
       "status": "completed",
       "title": "Observe CI and secure remote delivery",
       "details": "Branch codex/stabilisierung-bingo is pushed; push and pull_request checks passed on commit 86fb68a; PR #3 is open against copilot/develop-bingo-game. No merge or deployment was performed."
+    },
+    {
+      "id": "STAB-TODO-008",
+      "status": "completed",
+      "title": "Prepare server installation guide and ZIP bundle",
+      "details": "Created SERVER-INSTALLATION.md and dist/bingo-server-installation.zip. Validated the exact four ZIP entries and confirmed that both backend files and the embedded README match the repository byte-for-byte; no database, environment file, token, or secret is included. SHA-256: 47681681547FFAFABB97D1BAC7B91EB8AEBCF32D59267904C4D389CF6931E8BE."
     }
   ]
 }

@@ -38,7 +38,10 @@ Es werden weder Composer, SSH, Cronjobs noch zusätzliche Dienste benötigt.
    Einstellungen. Lege Werte nicht in öffentlich abrufbaren Dateien ab.
 5. Setze in `/docs/config.js` die API-Basisadresse (ohne `index.php`) auf
    `https://benjamin-lam.de/bingo/api/`.
-6. Aktiviere GitHub Pages für den Main-Branch und das Verzeichnis `/docs`.
+6. Richte GitHub Pages erst ein, wenn der veröffentlichbare Stand in den
+   ausgewählten Branch übernommen wurde. Die passende Branch-/`/docs`-Auswahl
+   sowie das Vorgehen für Entwicklungs- und Hauptbranch stehen in der
+   [Serverinstallations- und Pages-Anleitung](../SERVER-INSTALLATION.md).
 
 Die API prüft beim Start, dass der konfigurierte Datenbankpfad nicht im
 erkannten `DOCUMENT_ROOT` liegt. Die Datei enthält ausschließlich Hashes der

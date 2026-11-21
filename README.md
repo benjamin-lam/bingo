@@ -31,9 +31,12 @@ ist in `docs/config.js` konfigurierbar.
 
 ## Deployment
 
-Eine vollständige Anleitung für GitHub Pages und manuelles FTP/SFTP-Deployment
-des PHP-Backends einschließlich CORS, Dateirechten, Datenbank-Schutz,
-Spielbereinigung und Fehlerdiagnose steht in [backend/README.md](backend/README.md).
+Die Schritt-für-Schritt-Anleitung für Serverinstallation, GitHub Pages, API/CSP/CORS
+und Vorabtests steht in [SERVER-INSTALLATION.md](SERVER-INSTALLATION.md). Das
+Serverpaket zum Entpacken und getrennten Upload liegt in
+[dist/bingo-server-installation.zip](dist/bingo-server-installation.zip). Die
+technischen Details zu Dateirechten, Datenbankschutz, Bereinigung und Diagnose
+stehen zusätzlich in [backend/README.md](backend/README.md).
 
 Funktionale Regeln sind in [SPEC.md](SPEC.md) verbindlich dokumentiert;
 Entwicklungsregeln stehen in [AGENTS.md](AGENTS.md).
