@@ -1,0 +1,196 @@
+{
+  "review": {
+    "repository": "benjamin-lam/bingo",
+    "date": "2026-11-20",
+    "commit": "90f4c73669a3ff0bdc5dd30a347937102611e4b0",
+    "branch": "copilot/develop-bingo-game",
+    "pull_request": 1,
+    "status": "completed",
+    "production_ready": false,
+    "production_readiness_reason": "Bei 30 Teilnehmenden hinter derselben IP erzeugt das 2-Sekunden-Polling etwa 900 Requests/Minute, während das Backend dieselbe IP auf 180 Requests/Minute begrenzt. Ein 30-Client-Lasttest wurde nicht ausgeführt.",
+    "overall_assessment": "Spielregeln und grundlegende Sicherheit sind im geprüften Code weitgehend umgesetzt und die vorhandene PHP-Testsuite besteht. Offene Fehler betreffen IP-basiertes Rate-Limiting, inkonsistente Spiel-ID-Normalisierung und den Symlink-Schutz der SQLite-Datei; produktiver Betrieb mit 30 gleichzeitigen Spielern ist nicht nachgewiesen.",
+    "findings": [
+      {
+        "id": "BINGO-REV-001",
+        "title": "IP-Limit blockiert Polling bei gemeinsam genutzter IP",
+        "severity": "P1",
+        "category": "reliability",
+        "component": "Backend-Rate-Limit und Frontend-Polling",
+        "file": "backend/src/Game.php",
+        "line": 77,
+        "related_files": [
+          {
+            "file": "backend/public/index.php",
+            "line": 41
+          },
+          {
+            "file": "docs/app.js",
+            "line": 220
+          }
+        ],
+        "description": "Das Backend limitiert sämtliche Aktionen pro REMOTE_ADDR auf 180 Requests pro Minute. Das Frontend fragt alle zwei Sekunden ab; 30 Spieler hinter einer gemeinsamen IP erzeugen rund 900 Poll-Requests pro Minute und überschreiten das Limit nach etwa 12 Sekunden.",
+        "scenario": "Eine Gruppe spielt über dasselbe NAT oder denselben Proxy. Nach Überschreiten des IP-Limits erhalten Spieler HTTP 429 und die Zustands-Synchronisierung fällt aus.",
+        "recommendation": "Das Limit an die aggregierte Gruppennutzung anpassen und Lese-Polling von schreibenden Aktionen trennen. Client-IP-Weitergabe nur von explizit vertrauenswürdigen Proxies akzeptieren.",
+        "verification": "code_review_and_rate_calculation",
+        "status": "open"
+      },
+      {
+        "id": "BINGO-REV-002",
+        "title": "Spiel-ID wird validiert, aber nicht konsistent normalisiert",
+        "severity": "P2",
+        "category": "correctness",
+        "component": "API-Spielstatus und schreibende Aktionen",
+        "file": "backend/src/Game.php",
+        "line": 162,
+        "related_files": [
+          {
+            "file": "backend/src/Game.php",
+            "line": 334
+          },
+          {
+            "file": "backend/src/Game.php",
+            "line": 429
+          }
+        ],
+        "description": "validateGameId() wandelt die ID in Großbuchstaben um, nachfolgende Spielerabfragen und Schreiboperationen verwenden aber teilweise den ursprünglichen Parameter.",
+        "scenario": "Ein direkter API-Aufruf mit kleingeschriebener gültiger Spiel-ID authentifiziert sich gegen das normalisierte Spiel, findet anschließend den eigenen Datensatz nicht und endet in state() mit TypeError/HTTP 500. Schreibaktionen können erfolgreich antworten, ohne das Spiel zu verändern.",
+        "recommendation": "Die normalisierte ID einmal bestimmen und durchgängig für alle nachfolgenden Abfragen und Änderungen verwenden; Tests für gemischte Groß-/Kleinschreibung ergänzen.",
+        "verification": "reproduced_direct_php_call_typeerror",
+        "status": "open"
+      },
+      {
+        "id": "BINGO-REV-003",
+        "title": "Symlink kann die Webroot-Datenbankprüfung umgehen",
+        "severity": "P2",
+        "category": "security",
+        "component": "SQLite-Pfad- und Webroot-Schutz",
+        "file": "backend/src/Game.php",
+        "line": 21,
+        "description": "Das Elternverzeichnis wird kanonisiert, der Datenbank-Dateiname aber nicht aufgelöst. Ein Symlink als Datenbankdatei kann deshalb auf ein Ziel im Webroot zeigen, ohne die Pfadprüfung auszulösen.",
+        "scenario": "BINGO_DB_PATH zeigt auf einen Symlink außerhalb des Webroots, dessen Ziel eine Datei im Webroot ist. Der Konstruktor akzeptiert den Pfad und SQLite legt die Datenbank am öffentlichen Ziel an. Tatsächlicher HTTP-Abruf hängt zusätzlich von Webserver- und Benutzerrechten ab.",
+        "recommendation": "Datenbank-Symlinks ablehnen und das reale Ziel einer bestehenden Datei gegen den kanonischen Webroot prüfen; WAL-Dateien müssen ebenfalls außerhalb des Webroots bleiben.",
+        "verification": "reproduced_with_temporary_document_root_and_symlink",
+        "status": "open"
+      },
+      {
+        "id": "BINGO-REV-004",
+        "title": "Öffentliche Endpunkte ohne globale Ressourcenbegrenzung",
+        "severity": "P2",
+        "category": "security",
+        "component": "Spiel- und Teilnehmerverwaltung",
+        "file": "backend/public/index.php",
+        "line": 41,
+        "related_files": [
+          {
+            "file": "backend/src/Game.php",
+            "line": 112
+          },
+          {
+            "file": "backend/src/Game.php",
+            "line": 132
+          }
+        ],
+        "description": "create und join benötigen keinen vorhandenen Token. Es gibt keine globale Obergrenze für Spiele oder Lobby-Teilnehmende; das IP-Limit lässt sich über verteilte Quelladressen umgehen.",
+        "scenario": "Ein Client oder verteilte Clients erstellen Spiele und fügen Teilnehmende zu offenen Lobbys hinzu. Die Datenbank und die bei jedem Poll ausgegebene Spielerliste wachsen und können Shared-Hosting-Ressourcen erschöpfen.",
+        "recommendation": "Begrenzungen für Spiel- und Lobby-Wachstum sowie eine kontrollierte Erstellungsquote einführen und Aufbewahrung unter realer Nutzung prüfen.",
+        "verification": "code_review; resource_exhaustion_not_load_tested",
+        "status": "open"
+      },
+      {
+        "id": "BINGO-REV-005",
+        "title": "API-Ziel ist nicht vollständig unabhängig konfigurierbar",
+        "severity": "P2",
+        "category": "deployment",
+        "component": "Frontend-CSP und Deployment",
+        "file": "docs/index.html",
+        "line": 7,
+        "related_files": [
+          {
+            "file": "docs/config.js",
+            "line": 1
+          },
+          {
+            "file": "backend/README.md",
+            "line": 34
+          }
+        ],
+        "description": "apiBaseUrl ist konfigurierbar, connect-src erlaubt jedoch nur benjamin-lam.de, localhost:8001 und self. Die Anleitung nennt keine CSP-Anpassung beim Wechsel des API-Hosts.",
+        "scenario": "Nach Änderung von config.js und CORS auf einen anderen Backend-Host blockiert der Browser die API-Anfrage durch die Content Security Policy.",
+        "recommendation": "Die Deployment-Anleitung muss connect-src als gekoppelte Einstellung dokumentieren und die CSP bei einem API-Hostwechsel prüfen.",
+        "verification": "static_code_and_documentation_review",
+        "status": "open"
+      },
+      {
+        "id": "BINGO-REV-006",
+        "title": "Bingokarte hat keine programmatischen Zeilen-/Spaltenbeziehungen",
+        "severity": "P2",
+        "category": "accessibility",
+        "component": "Frontend-Barrierefreiheit",
+        "file": "docs/index.html",
+        "line": 56,
+        "related_files": [
+          {
+            "file": "docs/app.js",
+            "line": 142
+          }
+        ],
+        "description": "Die Karte ist als group mit Buttons und Buchstaben-Spans umgesetzt. Die visuellen CSS-Grid-Zeilen und -Spalten sind nicht programmatisch mit den Zahlen verknüpft.",
+        "scenario": "Screenreader-Nutzende können beim Durchlaufen der Zahlen die Bingo-Spalte und Zeile nicht zuverlässig zuordnen. WCAG-2.2-AA-Konformität ist nicht belegt.",
+        "recommendation": "Semantische Tabellen- oder gleichwertige Grid-Struktur mit verknüpften Überschriften verwenden und manuelle Tastatur-/Screenreader-Tests ausführen.",
+        "verification": "static_dom_review; no_manual_screenreader_test",
+        "status": "open"
+      },
+      {
+        "id": "BINGO-REV-007",
+        "title": "Konkurrenz- und Kapazitätsanforderungen sind nicht ausreichend getestet",
+        "severity": "P2",
+        "category": "testing",
+        "component": "Tests, SQLite-Konkurrenz und Mehrspielerbetrieb",
+        "file": "tests/run.php",
+        "line": 84,
+        "related_files": [
+          {
+            "file": "backend/src/Game.php",
+            "line": 391
+          }
+        ],
+        "description": "Der Prozess-Konkurrenztest für Ziehungen ist an pcntl_fork gebunden und wurde mangels pcntl übersprungen. Tests für konkurrierende Bingo-Meldungen, 30 Polling-Clients sowie HTTP-/CORS-/Rate-Limit-Verhalten fehlen.",
+        "scenario": "Einzelne Funktionsprüfungen bestehen, während Lock-Wartezeiten, Rate-Limit-Ausfälle oder HTTP-/CORS-Verhalten unter echter Mehrspielerlast fehlschlagen.",
+        "recommendation": "Konkurrenztests für Ziehungen und gleichzeitiges Bingo in CI verbindlich ausführen und einen 30-Client-Test gegen eine Web-SAPI mit aktivem Rate-Limit sowie HTTP-/CORS-Tests ergänzen.",
+        "verification": "test_source_and_runtime_modules_review; concurrency_branch_skipped",
+        "status": "open"
+      }
+    ],
+    "tests": {
+      "executed": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 2,
+      "assertions_passed": 234,
+      "details": [
+        "php tests/run.php: bestanden, 234 Assertions",
+        "php -l: alle drei PHP-Dateien bestanden",
+        "Direkter Aufruf mit kleingeschriebener ID: reproduzierter TypeError",
+        "Symlink-Ziel im temporären Webroot: Konstruktor akzeptierte den Datenbankpfad",
+        "pcntl-Konkurrenzzweig: übersprungen, Erweiterung fehlt",
+        "30-Client-Lasttest sowie Live-Deployment-/Screenreader-Test: nicht ausgeführt"
+      ],
+      "environment": "PHP 8.5.12, PDO SQLite vorhanden, pcntl nicht vorhanden"
+    },
+    "sections": {
+      "p0": "Keine Befunde.",
+      "p1": [
+        "BINGO-REV-001"
+      ],
+      "p2": [
+        "BINGO-REV-002",
+        "BINGO-REV-003",
+        "BINGO-REV-004",
+        "BINGO-REV-005",
+        "BINGO-REV-006",
+        "BINGO-REV-007"
+      ],
+      "recommendation": "Nicht produktionsbereit für 30 gleichzeitige Spieler; das Rate-Limit kollidiert mit dem Polling hinter gemeinsamer IP und die Last wurde nicht praktisch nachgewiesen."
+    }
+  }
+}
