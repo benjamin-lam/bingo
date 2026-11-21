@@ -1,5 +1,7 @@
 /backend/data/
 *.sqlite
 *.sqlite-*
+.bingo-rate-limits.json
+.bingo-rate-limits.lock
 .env
 .DS_Store

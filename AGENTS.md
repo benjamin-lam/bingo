@@ -11,3 +11,9 @@
 - Bestehende Tests mit `php tests/run.php` ausführen. Neue Regeln mit fokussierten
   Tests abdecken.
 - Commit-Nachrichten auf Deutsch verfassen.
+- Relevante Arbeitsergebnisse, Architekturentscheidungen, Prüfbefunde,
+  Testergebnisse und offene Aufgaben müssen als versionierte Dateien im
+  Repository gesichert werden. Eine Ausgabe ausschließlich im Chat gilt nicht
+  als abgeschlossene Arbeit. Menschenlesbare Berichte werden in Markdown und
+  strukturierte Ergebnisse zusätzlich in JSON abgelegt. Die erfolgreiche
+  Speicherung und Versionierung muss nachgewiesen werden.

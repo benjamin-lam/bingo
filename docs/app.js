@@ -26,6 +26,7 @@
   let pollTimer = null;
   let polling = false;
   let noticeTimer = null;
+  let lastRenderedSnapshot = null;
 
   function readSession() {
     try {
@@ -85,6 +86,7 @@
     clearInterval(pollTimer);
     pollTimer = null;
     polling = false;
+    lastRenderedSnapshot = null;
     session = null;
     localStorage.removeItem(sessionKey);
     gameView.hidden = true;
@@ -112,67 +114,128 @@
     button.type = 'button';
     button.className = className;
     button.textContent = text;
-    button.addEventListener('click', () => act(action));
+    button.dataset.focusKey = `action:${action}`;
+    button.addEventListener('click', () => {
+      if (action === 'end_round' && !window.confirm('Möchtest du die Runde wirklich ohne Gewinner beenden?')) return;
+      act(action);
+    });
     refs.actions.append(button);
   }
 
   function renderActions(state) {
     refs.actions.replaceChildren();
+    let message = '';
     if (state.game.role === 'admin' && state.game.status === 'lobby') {
       addAction('Runde starten', 'start');
     } else if (state.game.role === 'admin' && state.game.status === 'playing') {
       addAction('Nächste Zahl ziehen', 'draw');
+      addAction('Runde ohne Gewinner beenden', 'end_round', 'button button-light');
     } else if (state.game.role === 'admin' && state.game.status === 'finished') {
       const winner = document.createElement('p');
       winner.className = 'message';
-      winner.textContent = `BINGO! ${state.game.winner || 'Eine Person'} hat gewonnen.`;
+      winner.textContent = state.game.winner
+        ? `BINGO! ${state.game.winner} hat gewonnen.`
+        : 'Die Runde wurde ohne Gewinner beendet.';
       refs.actions.append(winner);
       addAction('Neue Runde vorbereiten', 'new_round', 'button button-secondary');
     } else if (state.game.role === 'player' && state.game.status === 'playing') {
       addAction('BINGO! Reihe melden', 'bingo', 'button button-secondary');
     }
-    if (state.game.role === 'player' && state.game.status === 'finished') {
-      refs.message.textContent = state.game.winner ? `BINGO! ${state.game.winner} hat gewonnen.` : 'Die Runde ist beendet.';
+    if (state.game.status === 'finished' && !state.game.winner) {
+      message = 'Die Runde wurde ohne Gewinner beendet.';
+    } else if (state.game.role === 'player' && state.game.status === 'finished') {
+      message = state.game.winner ? `BINGO! ${state.game.winner} hat gewonnen.` : 'Die Runde wurde ohne Gewinner beendet.';
     }
     if (state.game.status === 'lobby' && state.game.role === 'player') {
-      refs.message.textContent = 'Du bist dabei. Die Spielleitung startet die Runde.';
+      message = 'Du bist dabei. Die Spielleitung startet die Runde.';
     }
+    setText(refs.message, message);
   }
 
   function renderCard(state) {
     refs.cardSection.hidden = !state.card;
-    refs.card.replaceChildren();
+    const tableHead = refs.card.querySelector('thead');
+    const tableBody = refs.card.querySelector('tbody');
+    tableHead.replaceChildren();
+    tableBody.replaceChildren();
     if (!state.card) return;
     const headers = ['B', 'I', 'N', 'G', 'O'];
+    const headerRow = document.createElement('tr');
+    const rowHeaderHeading = document.createElement('th');
+    rowHeaderHeading.scope = 'col';
+    rowHeaderHeading.className = 'visually-hidden';
+    rowHeaderHeading.textContent = 'Zeile';
+    headerRow.append(rowHeaderHeading);
     headers.forEach((letter) => {
       const heading = document.createElement('span');
+      const cell = document.createElement('th');
+      const headerId = `bingo-column-${letter}`;
+      cell.id = headerId;
+      cell.scope = 'col';
       heading.className = 'bingo-cell column-heading';
       heading.textContent = letter;
-      refs.card.append(heading);
+      cell.append(heading);
+      headerRow.append(cell);
     });
+    tableHead.append(headerRow);
     const marked = new Set(state.marks);
     const drawn = new Set(state.game.drawn);
     for (let row = 0; row < 5; row++) {
+      const rowElement = document.createElement('tr');
+      const rowHeader = document.createElement('th');
+      const rowHeaderId = `bingo-row-${row + 1}`;
+      rowHeader.id = rowHeaderId;
+      rowHeader.scope = 'row';
+      rowHeader.className = 'visually-hidden';
+      rowHeader.textContent = `Zeile ${row + 1}`;
+      rowElement.append(rowHeader);
       for (let column = 0; column < 5; column++) {
         const number = state.card[column][row];
+        const tableCell = document.createElement('td');
+        tableCell.headers = `${rowHeaderId} bingo-column-${headers[column]}`;
         const cell = document.createElement(number === null ? 'span' : 'button');
         cell.className = 'bingo-cell';
         if (number === null) {
           cell.textContent = 'Frei';
-          cell.setAttribute('aria-label', 'Freifeld');
           cell.classList.add('free');
         } else {
           cell.type = 'button';
           cell.textContent = String(number);
-          cell.setAttribute('aria-label', `Zahl ${number}${marked.has(number) ? ', markiert' : drawn.has(number) ? ', gezogen' : ''}`);
+          cell.dataset.focusKey = `cell:${number}`;
+          cell.setAttribute('aria-label', `Zeile ${row + 1}, Spalte ${headers[column]}, Zahl ${number}`);
+          cell.setAttribute('aria-pressed', String(marked.has(number)));
           cell.disabled = state.game.status !== 'playing' || !drawn.has(number);
           if (drawn.has(number)) cell.classList.add('drawn');
           if (marked.has(number)) cell.classList.add('marked');
           cell.addEventListener('click', () => act('mark', { number, marked: !marked.has(number) }));
         }
-        refs.card.append(cell);
+        tableCell.append(cell);
+        rowElement.append(tableCell);
       }
+      tableBody.append(rowElement);
     }
+  }
+
+  function setText(element, value) {
+    if (element.textContent !== value) element.textContent = value;
+  }
+
+  function getFocusKey() {
+    const active = document.activeElement;
+    return gameView.contains(active) ? active.dataset.focusKey || null : null;
+  }
+
+  function restoreFocus(key) {
+    if (!key) return;
+    const target = Array.from(gameView.querySelectorAll('[data-focus-key]'))
+      .find((element) => element.dataset.focusKey === key);
+    if (target && !target.disabled) {
+      target.focus({ preventScroll: true });
+      return;
+    }
+    const fallback = Array.from(gameView.querySelectorAll('button:not(:disabled)'))
+      .find((element) => !element.disabled);
+    fallback?.focus({ preventScroll: true });
   }
 
   function render(state) {
@@ -180,9 +243,10 @@
     refs.roundLabel.textContent = state.game.status === 'playing' ? 'Runde läuft'
       : state.game.status === 'finished' ? 'Runde beendet' : 'Lobby';
     refs.roundHeading.textContent = state.game.status === 'playing' ? 'Die nächste Zahl kommt!'
-      : state.game.status === 'finished' ? 'Das Spiel ist entschieden' : 'Wartet auf den Start';
+      : state.game.status === 'finished' && !state.game.winner ? 'Die Runde wurde beendet'
+        : state.game.status === 'finished' ? 'Das Spiel ist entschieden' : 'Wartet auf den Start';
     refs.roundNumber.textContent = `Runde ${state.game.round}`;
-    refs.number.textContent = state.game.current_number ?? '–';
+    setText(refs.number, String(state.game.current_number ?? '–'));
     refs.drawnCount.textContent = `(${state.game.drawn.length})`;
     refs.drawn.replaceChildren();
     state.game.drawn.forEach((number) => {
@@ -206,11 +270,17 @@
     polling = true;
     try {
       const state = await request('state', { game_id: session.gameId, token: session.token });
-      render(state);
-      refs.connection.textContent = 'Verbunden';
+      const snapshot = JSON.stringify(state);
+      if (snapshot !== lastRenderedSnapshot) {
+        const focusKey = getFocusKey();
+        render(state);
+        lastRenderedSnapshot = snapshot;
+        restoreFocus(focusKey);
+      }
+      setText(refs.connection, 'Verbunden');
       refs.connection.classList.remove('error');
     } catch (error) {
-      refs.connection.textContent = `Verbindung unterbrochen – neuer Versuch in Kürze. ${errorMessage(error)}`;
+      setText(refs.connection, `Verbindung unterbrochen – neuer Versuch in Kürze. ${errorMessage(error)}`);
       refs.connection.classList.add('error');
     } finally {
       polling = false;
@@ -219,6 +289,7 @@
 
   function beginPolling() {
     clearInterval(pollTimer);
+    lastRenderedSnapshot = null;
     showGame();
     refresh();
     pollTimer = setInterval(refresh, 2000);

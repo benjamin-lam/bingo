@@ -38,18 +38,36 @@ try {
         throw new RuntimeException('BINGO_DB_PATH ist nicht konfiguriert.');
     }
     $game = new BingoGame($databasePath);
-    $game->rateLimit($_SERVER['REMOTE_ADDR'] ?? '');
-    $body = file_get_contents('php://input');
-    if ($body === false || strlen($body) > 4096) {
-        throw new ApiError('Die Anfrage ist zu groß.');
+    $clientAddress = $_SERVER['REMOTE_ADDR'] ?? '';
+    $inputStream = fopen('php://input', 'rb');
+    $body = $inputStream === false ? false : stream_get_contents($inputStream, 4097);
+    if ($body === false) {
+        $game->rateLimit($clientAddress, 'invalid');
+        throw new ApiError('Die Anfrage konnte nicht gelesen werden.');
     }
-    $input = json_decode($body, true, 16, JSON_THROW_ON_ERROR);
+    if (strlen($body) > 4096) {
+        $game->rateLimit($clientAddress, 'invalid');
+        throw new ApiError('Die Anfrage ist zu groß.', 413);
+    }
+    try {
+        $input = json_decode($body, true, 16, JSON_THROW_ON_ERROR);
+    } catch (JsonException $exception) {
+        $game->rateLimit($clientAddress, 'invalid');
+        throw $exception;
+    }
     if (!is_array($input)) {
+        $game->rateLimit($clientAddress, 'invalid');
         throw new ApiError('Ungültige JSON-Anfrage.');
     }
     $action = $input['action'] ?? '';
-    $gameId = is_string($input['game_id'] ?? null) ? $input['game_id'] : '';
+    $gameId = is_string($input['game_id'] ?? null) ? strtoupper(trim($input['game_id'])) : '';
     $token = is_string($input['token'] ?? null) ? $input['token'] : '';
+    $game->rateLimit(
+        $clientAddress,
+        is_string($action) ? $action : 'invalid',
+        $gameId,
+        $token
+    );
 
     $result = match ($action) {
         'create' => $game->create(),
@@ -69,6 +87,7 @@ try {
         ),
         'bingo' => $game->bingo($gameId, $token),
         'new_round' => $game->newRound($gameId, $token),
+        'end_round' => $game->endRound($gameId, $token),
         default => throw new ApiError('Unbekannte Aktion.'),
     };
     echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);

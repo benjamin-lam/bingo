@@ -1,0 +1,47 @@
+{
+  "date": "2026-11-21",
+  "tasks": [
+    {
+      "id": "STAB-TODO-001",
+      "status": "completed",
+      "title": "Review remote branches and preserve findings",
+      "details": "Inspected the clean main branch, remote app/review branches, and full historical review. Created codex/stabilisierung-bingo from the review branch containing the app and findings. Moved both historical review files unchanged to reviews/."
+    },
+    {
+      "id": "STAB-TODO-002",
+      "status": "completed",
+      "title": "Implement stabilization changes and tests",
+      "details": "Implemented differentiated limits, canonical IDs, SQLite path checks, concurrent caps, manual round ending, accessible table/poll rendering, test harnesses, CI, and documentation. Verification remains separately tracked below."
+    },
+    {
+      "id": "STAB-TODO-003",
+      "status": "open",
+      "title": "Run PHP suite and syntax checks",
+      "details": "The local Windows environment has no php executable or WSL. Run php tests/run.php and php -l checks with PHP 8.2+, pdo_sqlite, json, flock, and proc_open; resolve failures and record actual output. CI has been added but has not yet been observed."
+    },
+    {
+      "id": "STAB-TODO-004",
+      "status": "open",
+      "title": "Verify production hosting and group load",
+      "details": "Against the actual shared-hosting/PHP-SAPI deployment, verify environment variables, directory routing, private DB/rate-limit paths, proxy REMOTE_ADDR behavior, and a representative 30-player plus host polling run for at least one minute."
+    },
+    {
+      "id": "STAB-TODO-005",
+      "status": "open",
+      "title": "Complete manual browser accessibility review",
+      "details": "Use a real browser and keyboard plus at least one screen reader to verify semantic table announcements, marked states, visible focus, focus retention during polling, and WCAG 2.2 AA behavior. The local DOM harness is not a substitute."
+    },
+    {
+      "id": "STAB-TODO-006",
+      "status": "open",
+      "title": "Confirm alternate-host deployment behavior",
+      "details": "On the actual browser/API deployment, verify that config.js, CSP connect-src, and the backend CORS allowlist agree for both the production host and any intended alternate API host."
+    },
+    {
+      "id": "STAB-TODO-007",
+      "status": "open",
+      "title": "Observe CI and secure remote delivery",
+      "details": "After committing and pushing codex/stabilisierung-bingo, observe the GitHub Actions run and resolve failures; open a pull request against copilot/develop-bingo-game without merging or deploying. Record the final remote state."
+    }
+  ]
+}

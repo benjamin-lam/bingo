@@ -122,9 +122,12 @@ input { width: 100%; min-height: 48px; padding: .65rem .75rem; border: 1px solid
 .card-section { margin-top: 1.5rem; padding-top: .25rem; border-top: 1px solid var(--line); }
 .card-section h3 { margin-bottom: .35rem; }
 .help-text { margin: 0 0 .75rem; color: var(--muted); font-size: .9rem; }
-.bingo-card { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .3rem; max-width: 500px; }
+.bingo-card { width: 100%; max-width: 500px; table-layout: fixed; border-spacing: .3rem; }
+.bingo-card th, .bingo-card td { padding: 0; text-align: center; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .bingo-cell { display: grid; min-width: 0; aspect-ratio: 1; place-items: center; border: 1px solid var(--line); border-radius: .45rem; background: white; color: var(--ink); font-size: clamp(.85rem, 4vw, 1.15rem); font-weight: 750; }
 .bingo-cell.column-heading { aspect-ratio: auto; min-height: 34px; border: 0; background: var(--green-dark); color: white; }
+.bingo-cell.row-heading { min-height: 1px; }
 button.bingo-cell { cursor: pointer; }
 button.bingo-cell:disabled { cursor: default; opacity: .58; }
 button.bingo-cell.drawn { border-color: var(--green); background: var(--mint); }

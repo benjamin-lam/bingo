@@ -1,0 +1,57 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  php-and-frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: PHP mit SQLite einrichten
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_sqlite, json
+          coverage: none
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: PHP-Syntax prüfen
+        run: |
+          php -l backend/src/Game.php
+          php -l backend/public/index.php
+          php -l tests/run.php
+          php -l tests/http.php
+          php -l tests/concurrency-worker.php
+
+      - name: Vollständige Testsuite inklusive Konkurrenz ausführen
+        run: php tests/run.php
+
+      - name: JavaScript-Syntax prüfen
+        run: |
+          node --check docs/app.js
+          node --check docs/config.js
+          node --check tests/frontend-test.mjs
+          node --check tests/docs-test.mjs
+
+      - name: Frontend- und Dokumentationstests
+        run: |
+          node tests/frontend-test.mjs
+          node tests/docs-test.mjs
+
+      - name: JSON-Artefakte validieren
+        run: |
+          find . -path './.git' -prune -o -name '*.json' -type f -print0 | while IFS= read -r -d '' file; do
+            php -r 'json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);' -- "$file"
+          done

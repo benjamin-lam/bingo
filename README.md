@@ -21,7 +21,9 @@ PHP 8.2+, PDO SQLite und gewöhnliches Shared Hosting.
 4. In `/docs/config.js` `apiBaseUrl` auf `http://localhost:8001` setzen und
    `/docs` mit einem lokalen HTTP-Server bereitstellen (z. B.
    `python3 -m http.server 8000 --directory docs`).
-5. Tests mit `php tests/run.php` ausführen.
+5. Die PHP-, SQLite-Konkurrenz-, HTTP-/CORS- und Kapazitätstests mit
+   `php tests/run.php` ausführen; zusätzlich JavaScript mit
+   `node --check docs/app.js` und `node --check docs/config.js` prüfen.
 
 Die API akzeptiert JSON-POST-Anfragen unter `/` (lokal) oder `/api/` (Hosting).
 Die konkrete Aktion steht im JSON-Feld `action`. Die API-Adresse des Frontends
@@ -35,3 +37,11 @@ Spielbereinigung und Fehlerdiagnose steht in [backend/README.md](backend/README.
 
 Funktionale Regeln sind in [SPEC.md](SPEC.md) verbindlich dokumentiert;
 Entwicklungsregeln stehen in [AGENTS.md](AGENTS.md).
+
+## Stabilisierung und Prüfberichte
+
+Historische und aktuelle Review-Berichte liegen versioniert unter `reviews/`;
+Aufgaben stehen in `TODO.md` und `TODO.json`. Die Anwendung begrenzt Spiele auf
+100 gespeicherte Einträge und Lobbys auf 30 Mitspielende. Eine Freigabe für
+produktiven Betrieb setzt zusätzlich einen Test auf dem tatsächlichen Hosting
+und eine manuelle Tastatur-/Screenreader-Prüfung voraus.
