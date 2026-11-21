@@ -15,9 +15,9 @@
     },
     {
       "id": "STAB-TODO-003",
-      "status": "open",
+      "status": "completed",
       "title": "Run PHP suite and syntax checks",
-      "details": "The local Windows environment has no php executable or WSL. The first Actions run passed PHP syntax checks but stopped at an incorrect expected token counter in the concurrency regression test; the parallel counter test now uses fresh game tokens. Push the correction and wait for a successful php tests/run.php, HTTP, and process-concurrency run."
+      "details": "The complete PHP 8.2, PDO SQLite, HTTP, and process-concurrency suite plus PHP lint passed in both push and pull_request GitHub Actions checks on commit 86fb68a. PHP remains unavailable locally on Windows."
     },
     {
       "id": "STAB-TODO-004",
@@ -39,9 +39,9 @@
     },
     {
       "id": "STAB-TODO-007",
-      "status": "open",
+      "status": "completed",
       "title": "Observe CI and secure remote delivery",
-      "details": "Branch codex/stabilisierung-bingo is pushed and PR #3 is open against copilot/develop-bingo-game. Commit and push the follow-up test fix, observe a successful GitHub Actions run, and record the final remote state. Do not merge or deploy."
+      "details": "Branch codex/stabilisierung-bingo is pushed; push and pull_request checks passed on commit 86fb68a; PR #3 is open against copilot/develop-bingo-game. No merge or deployment was performed."
     }
   ]
 }

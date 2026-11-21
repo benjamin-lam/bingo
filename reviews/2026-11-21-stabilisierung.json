@@ -8,7 +8,7 @@
     "base_commit": "6782da90ef153ca101485b0487b0be607f1834eb",
     "application_commit": "90f4c73669a3ff0bdc5dd30a347937102611e4b0",
     "production_ready_for_30_players": false,
-    "production_readiness_reason": "Die PHP-Syntaxprüfungen liefen im ersten CI-Lauf erfolgreich; die Suite stoppte jedoch an einer fehlerhaften Erwartung im neuen Rate-Limit-Konkurrenztest. Der Test verwendet nun frische Token für die parallele Zählerprüfung; der erneute CI-Lauf steht noch aus. Ein produktionsnaher 30-Client-Test auf dem tatsächlichen Shared Hosting sowie manuelle Browser-/Screenreader-Prüfungen stehen ebenfalls aus.",
+    "production_readiness_reason": "Der vollständige PHP-8.2-, SQLite-, HTTP- und Konkurrenztestlauf ist in GitHub Actions auf Commit 86fb68a erfolgreich. Ein produktionsnaher 30-Client-Test auf dem tatsächlichen Shared Hosting, die Prüfung der konkreten Proxy-/CORS-Konfiguration sowie manuelle Browser-/Screenreader-Prüfungen stehen weiterhin aus.",
     "status_definitions": {
       "fixed_verified": "Änderung ist implementiert und durch passende automatisierte oder nachvollziehbar dokumentierte manuelle Prüfungen erfolgreich verifiziert.",
       "implemented_unverified": "Änderung und vorgesehene Tests sind versioniert, aber mindestens eine notwendige Verifikation wurde noch nicht erfolgreich ausgeführt.",
@@ -58,23 +58,23 @@
       },
       {
         "check": "php tests/run.php",
-        "status": "blocked",
-        "evidence": "PHP ist in dieser Windows-Umgebung nicht installiert bzw. nicht auf PATH; die umfassende PHP-/SQLite-/HTTP-/Konkurrenzsuite wurde daher nicht ausgeführt."
+        "status": "passed",
+        "evidence": "Vollständige Suite unter PHP 8.2 mit pdo_sqlite, proc_open und vier PHP-CLI-Server-Workern in GitHub Actions auf Commit 86fb68a bestanden. PHP ist lokal in Windows weiterhin nicht verfügbar."
       },
       {
         "check": "php -l backend/src/Game.php backend/public/index.php tests/*.php",
-        "status": "blocked",
-        "evidence": "PHP ist lokal nicht verfügbar. GitHub Actions führt die PHP-Syntaxprüfungen und Tests verpflichtend aus."
+        "status": "passed",
+        "evidence": "Alle PHP-Dateien wurden im GitHub-Actions-Lauf auf Commit 86fb68a mit PHP 8.2 erfolgreich gelintet. PHP ist lokal nicht verfügbar."
       },
       {
         "check": "HTTP-/CORS-Integration und parallele PHP-Prozesse",
-        "status": "blocked",
-        "evidence": "Die Suite enthält HTTP-/CORS-Integration und 31 barrier-synchronisierte parallele HTTP-Statusabfragen gegen vier PHP-CLI-Server-Worker. Tests benötigen den lokalen PHP-Webserver, pdo_sqlite und proc_open; sie konnten mangels PHP nicht gestartet werden."
+        "status": "passed",
+        "evidence": "HTTP-/CORS-Integration, Prozess-Konkurrenztests und 31 barrier-synchronisierte HTTP-Statusabfragen gegen vier PHP-CLI-Server-Worker liefen in GitHub Actions auf Commit 86fb68a erfolgreich. Der konkrete Shared Host bleibt ungeprüft."
       },
       {
         "check": "GitHub Actions",
-        "status": "failed_then_fix_pushed_pending_rerun",
-        "evidence": "Lauf #1 (Commit 711d18a) bestand alle PHP-Syntaxprüfungen, stoppte aber an der Erwartung eines frischen Tokenzählers, nachdem dieselben Tokens in der vorherigen synthetischen Pollsequenz verwendet wurden. Die Parallelprüfung nutzt jetzt eine eigene frische Spiel-/Tokenmenge; Ergebnis des erneuten Laufs steht aus."
+        "status": "passed",
+        "evidence": "Der erste Lauf auf 711d18a deckte eine falsche Zähler-Testannahme auf; der Test wurde auf frische Tokens isoliert. Beide Folge-Läufe (Push und Pull-Request) auf 86fb68a bestanden vollständig."
       },
       {
         "check": "Echter Browser, Screenreader, Shared-Hosting-Lasttest",
@@ -87,55 +87,55 @@
         "id": "BINGO-REV-001",
         "original_priority": "P1",
         "title": "Aktionstyp-spezifisches Rate-Limiting",
-        "status": "implemented_unverified",
+        "status": "fixed_verified",
         "change": "Statusabfragen, Schreibaktionen, öffentliche Erstellung/Beitritt und ungültige Requests verwenden getrennte, gehashte Limits. Status ist auf 1.800/min/IP und 45/min/Token ausgelegt; Schreibaktionen auf 1.200/min/IP und 120/min/Token, Erstellung auf 5/min/IP, Beitritt auf 60/min/IP; global gelten 3.600/min/IP. Zähler liegen in einer flock-gesperrten Datei außerhalb des Webroots, nicht in SQLite. Eine separate stabile Lockdatei serialisiert Zugriffe; die JSON-Daten werden über eine temporäre Datei atomar ersetzt. Bodies sind auf 4 KiB begrenzt; globale und aktionsspezifische Zähler werden gemeinsam aktualisiert, fehlerhafte Bodies zählen ebenfalls zum IP- und Invalid-Request-Limit. Proxy-Header werden nicht ungeprüft vertraut. Die generierte Rate-Limit-Datei wird von Git ignoriert.",
         "changed_files": [".gitignore", "backend/src/Game.php", "backend/public/index.php", "SPEC.md", "backend/README.md", "tests/run.php", "tests/http.php", "tests/concurrency-worker.php"],
         "tests": ["tests/run.php: synthetische Polling-Sequenz von 31 Clients/62 Sekunden und parallele 31 Statusabfragen gleicher IP", "tests/run.php: parallele Rate-Limit-Updates hinterlassen gültiges JSON und behalten alle 31 IP- sowie 31 Tokenzähler bei", "tests/run.php: Status-, Schreib- und Erstellungsgrenzen", "tests/http.php: Erstellungslimit und wiederholte ungültige JSON-Anfragen"],
-        "test_results": "Nicht ausgeführt: PHP fehlt lokal; CI-Lauf steht aus.",
+        "test_results": "GitHub Actions auf Commit 86fb68a bestanden: 31 synchrone HTTP-Poller unter einer IP, synthetische 31-Client-Sequenz, atomare Zählererhaltung, Ratenlimits und vollständige PHP-Suite. Der reale Shared-Hosting-Durchsatz bleibt offen.",
         "remaining_risks": ["Dateisperren und Durchsatz müssen im konkreten Shared-Hosting/PHP-SAPI unter 30 realen Clients gemessen werden.", "Für vorgeschaltete Proxies muss REMOTE_ADDR serverseitig sicher auf die echte Client-IP gesetzt werden."]
       },
       {
         "id": "BINGO-REV-002",
         "original_priority": "P2",
         "title": "Konsistente Normalisierung der Spiel-ID",
-        "status": "implemented_unverified",
+        "status": "fixed_verified",
         "change": "Die API normalisiert IDs an der Eingangsgrenze; Game-Methoden normalisieren ebenfalls vor allen Abfragen, Transaktionen und Schreiboperationen.",
         "changed_files": ["backend/public/index.php", "backend/src/Game.php", "tests/run.php", "tests/http.php"],
         "tests": ["tests/run.php: lowercase ID bei state, join, start, draw, mark, bingo, endRound und newRound", "tests/http.php: lowercase ID bei Join und State"],
-        "test_results": "Nicht ausgeführt: PHP fehlt lokal; CI-Lauf steht aus.",
+        "test_results": "Die ID-Normalisierungsregressionen in der vollständigen PHP- und HTTP-Suite bestanden in GitHub Actions auf Commit 86fb68a.",
         "remaining_risks": []
       },
       {
         "id": "BINGO-REV-003",
         "original_priority": "P2",
         "title": "SQLite-Pfad- und Symlink-Schutz",
-        "status": "implemented_unverified",
+        "status": "fixed_verified",
         "change": "Prüft kanonische Pfade von Datenbank und SQLite-Sidecars gegen den realen Dokumentenpfad, lehnt Datei-/Sidecar-/Rate-Limit-Symlinks sowie zusätzliche Hardlinks und nicht-reguläre Datenbankpfade ab und schützt vorhandene Dateien ohne wiederholte chmod-Schreibvorgänge. Absolute Windows-Laufwerk- und UNC-Pfade werden unterstützt.",
         "changed_files": ["backend/src/Game.php", "tests/run.php", "tests/http.php"],
         "tests": ["tests/run.php: private DB, DB im Webroot, bestehende öffentliche DB, DB-Symlink, öffentlicher Hardlink, WAL-/SHM-/Journal-Symlink, Webroot-Verzeichnis-Symlink und Rate-Limit-Hardlink", "tests/http.php: HTTP-500-Verhalten und keine öffentliche DB-Datei nach abgewiesenem Pfad"],
-        "test_results": "Nicht ausgeführt: PHP fehlt lokal; CI-Lauf steht aus.",
+        "test_results": "Pfad-, Symlink-, Hardlink- und Webroot-Regressionen sowie PHP-Lint bestanden in GitHub Actions auf Commit 86fb68a.",
         "remaining_risks": ["Ein echter Webserver-/Dateisystem-Deploy wurde nicht geprüft; Rechte und Webroot-Konfiguration müssen dort verifiziert werden."]
       },
       {
         "id": "BINGO-REV-004",
         "original_priority": "P2",
         "title": "Spiel- und Teilnehmergrenzen",
-        "status": "implemented_unverified",
+        "status": "fixed_verified",
         "change": "Erstellung serialisiert SQLite-Schreibtransaktionen, löscht zuerst Spiele mit mehr als 30 Tagen Inaktivität und erlaubt höchstens 100 gespeicherte Spiele. Beitritte sind transaktional auf höchstens 30 Mitspielende begrenzt; die Spielleitung zählt nicht mit.",
         "changed_files": ["backend/src/Game.php", "tests/run.php", "SPEC.md", "README.md"],
         "tests": ["tests/run.php: 31 parallele Join-Prozesse (30 angenommen, einer mit 409 abgewiesen)", "tests/run.php: konkurrierende Spielerstellung am 100-Spiele-Limit", "tests/run.php: abgelaufenes Spiel wird bei Erstellung entfernt, auch bei überfülltem Altbestand"],
-        "test_results": "Nicht ausgeführt: PHP fehlt lokal; CI-Lauf steht aus.",
+        "test_results": "Konkurrierende 30/31-Beitritte, das 100-Spiele-Limit und die Bereinigungstests bestanden in GitHub Actions auf Commit 86fb68a.",
         "remaining_risks": ["Die Lastwirkung unter dem realen Shared-Hosting-Tarif ist noch nicht gemessen."]
       },
       {
         "id": "BINGO-REV-005",
         "original_priority": "P2",
         "title": "CSP-, CORS- und Hosting-Konfiguration",
-        "status": "implemented_unverified",
+        "status": "fixed_verified",
         "change": "Dokumentiert die gemeinsame Änderung von apiBaseUrl, connect-src und CORS-Origin-Allowlist. Die Shared-Hosting-Anleitung nennt nun explizite Upload-Pfade backend/src/Game.php -> privates src/Game.php und backend/public/index.php -> Webroot/bingo/api/index.php.",
         "changed_files": ["backend/README.md", "tests/http.php"],
         "tests": ["tests/http.php: erlaubter/fremder CORS-Origin, Preflight, HTTP-Methoden und statischer CSP/API-Host-Abgleich"],
-        "test_results": "HTTP-Test durch PHP nicht ausgeführt; statische Prüfung wird von tests/http.php vorgesehen. Kein alternativer Host im echten Browser getestet.",
+        "test_results": "CORS-, Preflight-, HTTP-Methoden- und CSP/API-Host-Prüfungen bestanden in GitHub Actions auf Commit 86fb68a. Kein alternativer Host im echten Browser getestet.",
         "remaining_risks": ["DNS, HTTPS, Hosting-Routing, Umgebungsvariablen und konkrete CORS-Origin-Werte müssen beim Deployment bestätigt werden."]
       },
       {
@@ -146,27 +146,27 @@
         "change": "Ersetzt das reine CSS-Grid durch eine semantische HTML-Tabelle mit Caption, Zeilen-/Spaltenüberschriften, verknüpften Tabellenzellen, Button-Beschriftungen und aria-pressed. Unveränderte Poll-Antworten bauen die Oberfläche nicht neu; bei Änderungen wird der Fokus anhand eines stabilen Schlüssels wiederhergestellt. Das manuelle Rundenende wird den Mitspielenden ohne Gewinner angezeigt.",
         "changed_files": ["docs/index.html", "docs/app.js", "docs/style.css", "tests/frontend-test.mjs"],
         "tests": ["node tests/frontend-test.mjs: bestanden; testet Tabellenstruktur, Markierungszustand, keine DOM-Neuerstellung bei unverändertem Poll und Fokuswiederherstellung nach Update"],
-        "test_results": "Node-DOM-Harness bestanden. Kein echter Browser-, Screenreader- oder WCAG-2.2-AA-Test ausgeführt.",
+        "test_results": "Node-DOM-Harness und CI bestanden. Kein echter Browser-, Screenreader- oder WCAG-2.2-AA-Test ausgeführt; deshalb bleibt der Befund unverified.",
         "remaining_risks": ["Screenreader-Ankündigungen und Tabellen-Navigation müssen manuell mit echten Browser-/Screenreader-Kombinationen geprüft werden."]
       },
       {
         "id": "BINGO-REV-007",
         "original_priority": "P2",
         "title": "Konkurrenz-, HTTP- und Regressionstest-Abdeckung",
-        "status": "implemented_unverified",
+        "status": "fixed_verified",
         "change": "Ersetzt das pcntl-bedingte Überspringen durch obligatorische proc_open-Worker mit Startbarriere. Fügt Konkurrenztests für Ziehen, gültige Bingo-Rufe/Einzelgewinner, 30 Teilnehmende, 100 Spiele, direkte Poller und 31 barrier-synchronisierte HTTP-Statusabfragen über mehrere PHP-CLI-Server-Worker hinzu; außerdem HTTP/CORS-, Berechtigungs-, Fehler-, Reconnect- und Rundentests sowie eine GitHub-Actions-Pipeline ohne bezahlte Dienste.",
         "changed_files": ["tests/run.php", "tests/http.php", "tests/concurrency-worker.php", "tests/frontend-test.mjs", "tests/docs-test.mjs", ".github/workflows/tests.yml"],
         "tests": ["tests/run.php", "tests/http.php: 31 barrier-synchronisierte HTTP-Statusabfragen über mehrere PHP-CLI-Server-Worker", "tests/concurrency-worker.php", "tests/frontend-test.mjs", "tests/docs-test.mjs", ".github/workflows/tests.yml"],
-        "test_results": "node tests/frontend-test.mjs und node tests/docs-test.mjs wurden lokal ausgeführt und bestanden. Der erste CI-Lauf bestand die PHP-Syntaxprüfungen, stoppte in der PHP-Suite an der korrigierten Rate-Limit-Testannahme; der vollständige erneute Lauf steht aus.",
+        "test_results": "Vollständige PHP-/SQLite-/HTTP-/Konkurrenzsuite, Frontend- und Dokumentationstests sowie PHP-Lint bestanden in GitHub Actions auf Commit 86fb68a; die beiden Node-Tests bestanden zusätzlich lokal.",
         "remaining_risks": ["Die CI darf proc_open nicht deaktivieren; der Test bricht ausdrücklich ab, statt Konkurrenztests zu überspringen.", "Das produktive 30-Client-Verhalten ist ohne echten Hosting-Lasttest nicht belegt."]
       }
     ],
-    "open_tasks": ["STAB-TODO-003", "STAB-TODO-004", "STAB-TODO-005", "STAB-TODO-006", "STAB-TODO-007"],
+    "open_tasks": ["STAB-TODO-004", "STAB-TODO-005", "STAB-TODO-006"],
     "git": {
       "working_branch": "codex/stabilisierung-bingo",
-      "commit": null,
-      "push_status": "pending",
-      "pull_request_url": null,
+      "commit": "86fb68ad7db5d2dd47c8c42d29f17e8a63b38bed",
+      "push_status": "pushed; push and pull_request CI checks passed",
+      "pull_request_url": "https://github.com/benjamin-lam/bingo/pull/3",
       "historical_review_files_moved_unchanged": true,
       "historical_review_paths": ["reviews/2026-11-20-review.md", "reviews/2026-11-20-review.json"]
     }
